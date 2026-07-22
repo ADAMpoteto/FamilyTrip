@@ -26,12 +26,12 @@ a:focus-visible,button:focus-visible,select:focus-visible,[tabindex]:focus-visib
   *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
 }
 
-/* NAV */
+/* NAV（中央揃えに修正） */
 nav{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.93);backdrop-filter:blur(12px);border-bottom:.5px solid var(--border);padding:0 16px;transition:box-shadow .2s;}
 nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
-.nav-top{display:flex;justify-content:flex-start;padding:8px 0 4px;}
+.nav-top{display:flex;justify-content:center;padding:8px 0 4px;}
 .nav-brand{font-size:12px;font-weight:800;letter-spacing:.04em;white-space:nowrap;display:flex;align-items:center;gap:6px;}
-.nav-links{display:flex;justify-content:flex-start;gap:0;overflow-x:auto;scrollbar-width:none;padding-bottom:6px;}
+.nav-links{display:flex;justify-content:center;gap:0;overflow-x:auto;scrollbar-width:none;padding-bottom:6px;}
 .nav-links::-webkit-scrollbar{display:none;}
 .nav-btn{font-size:12px;padding:5px 12px;border-radius:var(--r);border:none;background:none;color:var(--text2);cursor:pointer;white-space:nowrap;transition:background .12s,color .12s;}
 .nav-btn:hover{background:var(--bg2);color:var(--text);}
@@ -82,7 +82,6 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 .sch-list{margin-top:2px;}
 .sch-item{display:grid;grid-template-columns:56px 1fr;gap:10px;}
 .sch-time{font-size:12px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums;padding-top:1px;text-align:right;}
-.sch-arr{display:block;font-size:10px;color:var(--text3);font-weight:600;margin-top:1px;}
 .sch-body{position:relative;padding-left:20px;padding-bottom:22px;border-left:2px solid var(--border);margin-left:3px;}
 .sch-item:last-child .sch-body{border-left-color:transparent;padding-bottom:4px;}
 .sch-body::before{content:"";position:absolute;left:-8px;top:1px;width:13px;height:13px;border-radius:50%;background:var(--bg);border:2.5px solid var(--text);}
@@ -92,12 +91,14 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 .maplink{font-size:12px;color:#1a4db0;text-decoration:underline;font-weight:600;}
 .sch-note{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
 
-/* HISTORY LOG */
-.hist-log{border-top:.5px solid var(--border);}
-.log-item{display:grid;grid-template-columns:104px 1fr;gap:14px;padding:14px 4px;border-bottom:.5px solid var(--border);align-items:start;}
-.log-date{font-size:12px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums;padding-top:1px;}
-.log-content{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
-@media(max-width:480px){ .log-item{grid-template-columns:84px 1fr;gap:10px;} .log-date{font-size:11px;} }
+/* HISTORY TIMELINE (年表スタイルに変更) */
+.hist-timeline{position:relative;padding-left:20px;margin-top:10px;}
+.hist-timeline::before{content:"";position:absolute;left:4px;top:8px;bottom:8px;width:2px;background:var(--border2);}
+.hist-item{position:relative;margin-bottom:24px;padding-left:16px;}
+.hist-item:last-child{margin-bottom:0;}
+.hist-item::before{content:"";position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--text);border:2px solid var(--bg);}
+.hist-date{font-size:12px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums;margin-bottom:2px;}
+.hist-content{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
 
 .loading{padding:32px 0;text-align:center;color:var(--text3);font-size:13px;}
 
@@ -148,7 +149,7 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 <script>
 /* =====================================================================
    データソース（Googleスプレッドシートの公開CSV）
-   ・旅のしおり : 旅行日 / 旅行タイトル / 何日目 / 出発時刻 / 到着時刻 / 訪問先名 / メモ
+   ・旅のしおり : 旅行日 / 旅行タイトル / 何日目 / 出発時刻 / 訪問先名 / メモ
    ・ヒストリー : 日付 / 内容
    ===================================================================== */
 const URL_SHIORI  = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo5stnTOsjo7t3y-IsCX96ryADJWD0Es6eqRRyYlS99QgWqtLGRMGMCywYysxk47Q-q3nUqW0lea9A/pub?gid=0&single=true&output=csv";
@@ -213,7 +214,7 @@ function buildTrips(rows){
     if(!map[key]) map[key]={ key, dateRaw, title, dateObj:pd(dateRaw), days:{} };
     const dnum=Number(F(o,"何日目"))||1;
     (map[key].days[dnum]=map[key].days[dnum]||[]).push({
-      dep:F(o,"出発時刻"), arr:F(o,"到着時刻"), name:F(o,"訪問先名"), note:F(o,"メモ")
+      dep:F(o,"出発時刻"), name:F(o,"訪問先名"), note:F(o,"メモ")
     });
   });
   const list=Object.values(map);
@@ -232,7 +233,7 @@ function buildTrips(rows){
 function pickDefaultTrip(list){
   const t=new Date(); t.setHours(0,0,0,0);
   let idx=list.findIndex(x=>x.dateObj && x.dateObj>=t);   // 直近の未来の旅行
-  if(idx<0) idx=list.length-1;                            // 全て過去なら最後
+  if(idx<0) idx=list.length-1;                             // 全て過去なら最後
   return idx<0?0:idx;
 }
 
@@ -279,8 +280,7 @@ function renderShiori(idx){
 }
 
 function schItemHtml(s){
-  const dep=escHtml(s.dep||""), arr=escHtml(s.arr||"");
-  const time=`${dep}${arr?`<span class="sch-arr">〜${arr}</span>`:""}`;
+  const time=escHtml(s.dep||"");
   const place=s.name?`<div class="sch-place"><a class="maplink" href="${mapLink(s.name)}" target="_blank">地図で見る ↗</a></div>`:"";
   const note=s.note?`<div class="sch-note">${escHtml(s.note)}</div>`:"";
   return `<div class="sch-item">
@@ -309,7 +309,7 @@ function selectDay(i){
   if(a){ const nav=document.querySelector("nav"); const y=window.scrollY+a.getBoundingClientRect().top-(nav?nav.offsetHeight:0)-8; window.scrollTo({top:Math.max(0,y), behavior:prefersReduced()?"auto":"smooth"}); }
 }
 
-/* ---------- ヒストリー ---------- */
+/* ---------- ヒストリー（年表風に修正） ---------- */
 async function loadHistory(){
   let rows;
   try{ const r=await fetchCSV(URL_HISTORY); rows=cleanRows(r.data); }
@@ -323,15 +323,16 @@ async function loadHistory(){
     if(!a.dateObj && !b.dateObj) return 0;
     if(!a.dateObj) return 1;
     if(!b.dateObj) return -1;
-    return b.dateObj-a.dateObj;                // 新しい順
+    return b.dateObj-a.dateObj;                 // 新しい順
   });
   document.getElementById("hist-stats").innerHTML=`<div class="stat-chip">記録 <strong>${items.length} 件</strong></div>`;
   const body=document.getElementById("hist-list");
   if(!items.length){ body.innerHTML='<div class="loading">まだ記録がありません</div>'; return; }
-  body.innerHTML='<div class="hist-log">'+items.map(it=>`
-    <div class="log-item">
-      <div class="log-date">${escHtml(it.dateRaw||"")}</div>
-      <div class="log-content">${escHtml(it.content||"")}</div>
+  
+  body.innerHTML='<div class="hist-timeline">'+items.map(it=>`
+    <div class="hist-item">
+      <div class="hist-date">${escHtml(it.dateRaw||"")}</div>
+      <div class="hist-content">${escHtml(it.content||"")}</div>
     </div>`).join("")+'</div>';
 }
 
