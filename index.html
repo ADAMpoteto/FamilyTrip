@@ -1,32 +1,3 @@
-失礼いたしました！「これまでの記録」の件数表示（バッジ）のことですね。大変失礼いたしました。
-
-「記録 2件」と表示されているパーツ（`stat-chip`）を消すには、JavaScriptの `loadHistory` 関数内にある以下の箇所を変更してください。
-
----
-
-### 修正箇所
-
-**【修正前のコード】**
-
-```javascript
-  document.getElementById("hist-stats").innerHTML=`<div class="stat-chip">記録 <strong>${items.length} 件</strong></div>`;
-
-```
-
-**【修正後のコード】**
-
-```javascript
-  document.getElementById("hist-stats").innerHTML = "";
-
-```
-
----
-
-### 修正を適用したヒストリー（年表）ありの全コード
-
-「記録 件数」の表示のみを削除し、年表デザインとヘッダー中央揃えを反映した最新コードです。こちらをそのまま上書きしてご活用ください。
-
-```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -375,5 +346,3 @@ loadHistory();
 </script>
 </body>
 </html>
-
-```
