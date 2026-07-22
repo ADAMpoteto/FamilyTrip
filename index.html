@@ -318,11 +318,13 @@ async function loadHistory(){
   }
   const items=rows.map(o=>({ dateRaw:F(o,"日付"), dateObj:pd(F(o,"日付")), content:F(o,"内容") }))
                   .filter(x=>x.dateRaw || x.content);
+  
+  // 古い順（昇順）にソート
   items.sort((a,b)=>{
     if(!a.dateObj && !b.dateObj) return 0;
     if(!a.dateObj) return 1;
     if(!b.dateObj) return -1;
-    return b.dateObj-a.dateObj;                 // 新しい順
+    return a.dateObj-b.dateObj;                 // 古い順
   });
   
   const body=document.getElementById("hist-list");
