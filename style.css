@@ -97,11 +97,15 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 .loading{padding:32px 0;text-align:center;color:var(--text3);font-size:13px;}
 
 /* CLEANING SUMMARY */
-.clean-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
-.clean-card{border:1.5px solid var(--border);border-radius:var(--rl);padding:14px;}
-.clean-card-title{font-size:15px;font-weight:800;margin-bottom:10px;padding-bottom:8px;border-bottom:1.5px solid var(--border);}
-.clean-card-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2);padding:3px 0;}
-.clean-card-row strong{color:var(--text);font-weight:700;text-align:right;}
+.clean-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.clean-card{border:1.5px solid var(--border);border-radius:var(--rl);padding:16px;background:var(--bg);}
+.clean-card-title{font-size:16px;font-weight:800;margin-bottom:10px;padding-bottom:10px;border-bottom:1.5px solid var(--border);}
+.clean-card-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;}
+.clean-card-row:not(:last-child){border-bottom:1px dashed var(--border);}
+.clean-card-row span{font-size:13px;font-weight:700;color:var(--text);}
+.clean-card-row strong{font-size:12px;font-weight:700;color:var(--text2);text-align:right;}
+.clean-card-row strong.badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;background:var(--text);color:#fff;}
+.clean-card-row strong.badge.zero{background:var(--bg2);color:var(--text3);}
 
 /* KAJI SUMMARY（家事当番） */
 .kaji-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
