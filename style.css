@@ -103,5 +103,18 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 .clean-card-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2);padding:3px 0;}
 .clean-card-row strong{color:var(--text);font-weight:700;text-align:right;}
 
+/* KAJI SUMMARY（家事当番） */
+.kaji-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.kaji-card{border:1.5px solid var(--border);border-radius:var(--rl);padding:16px;background:var(--bg);}
+.kaji-card-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:800;margin-bottom:10px;padding-bottom:10px;border-bottom:1.5px solid var(--border);}
+.kaji-card-title .icon{font-size:18px;line-height:1;}
+.kaji-person{display:grid;grid-template-columns:60px 44px 1fr;align-items:center;gap:10px;padding:8px 0;}
+.kaji-person:not(:last-child){border-bottom:1px dashed var(--border);}
+.kaji-person-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kaji-count-badge{font-size:11px;font-weight:800;padding:3px 0;border-radius:99px;background:var(--text);color:#fff;text-align:center;justify-self:start;min-width:38px;}
+.kaji-count-badge.zero{background:var(--bg2);color:var(--text3);}
+.kaji-last{font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+.kaji-last.none{color:var(--text3);}
+
 /* FOOTER */
 .foot{border-top:.5px solid var(--border);padding:24px 16px 40px;text-align:center;color:var(--text3);font-size:11px;line-height:1.9;}

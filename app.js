@@ -293,16 +293,13 @@ async function loadKaji(){
   }));
 
   const cards=chores.map(chore=>{
-    let count=0, lastDate=null, lastRaw="";
     const personCount={}, personLast={};
     people.forEach(p=>{ personCount[p]=0; personLast[p]=""; });
     rows.forEach(r=>{
       const v=F(r,chore);
       if(!v) return;
-      count++;
       const dateRaw=F(r,"日付");
       const d=pd(dateRaw);
-      if(d && (!lastDate || d>lastDate)){ lastDate=d; lastRaw=dateRaw; }
       const targets = MULTI_WORDS.includes(v) ? Array.from(people) : [v];
       targets.forEach(p=>{
         personCount[p]=(personCount[p]||0)+1;
@@ -310,17 +307,25 @@ async function loadKaji(){
         if(d && (!pd2 || d>pd2)) personLast[p]=dateRaw;
       });
     });
-    return { chore, count, lastRaw, personCount, personLast };
+    return { chore, personCount, personLast };
   });
 
+  // 家事の種類ごとに軽くアイコンを添えて視認性を上げる（未登録の家事名は既定アイコンにフォールバック）
+  const CHORE_ICONS={ "買い物":"🛒", "料理":"🍳", "ゴミ出し":"🗑️", "洗濯":"🧺", "家計簿":"💰", "自動車":"🚗", "子ども":"🧒" };
+
   box.innerHTML=cards.map(c=>{
-    const personRows=Object.keys(c.personCount).map(p=>
-      `<div class="clean-card-row"><span>${escHtml(p)}</span><strong>${c.personCount[p]}回 / ${escHtml(c.personLast[p]||"未実施")}</strong></div>`
-    ).join("");
-    return `<div class="clean-card">
-      <div class="clean-card-title">${escHtml(c.chore)}</div>
-      <div class="clean-card-row"><span>実施済み</span><strong>${c.count}回</strong></div>
-      <div class="clean-card-row"><span>最終実施</span><strong>${escHtml(c.lastRaw||"未実施")}</strong></div>
+    const icon=CHORE_ICONS[c.chore]||"🏠";
+    const personRows=Object.keys(c.personCount).map(p=>{
+      const cnt=c.personCount[p];
+      const last=c.personLast[p];
+      return `<div class="kaji-person">
+        <span class="kaji-person-name">${escHtml(p)}</span>
+        <span class="kaji-count-badge${cnt===0?" zero":""}">${cnt}回</span>
+        <span class="kaji-last${last?"":" none"}">${escHtml(last||"未実施")}</span>
+      </div>`;
+    }).join("");
+    return `<div class="kaji-card">
+      <div class="kaji-card-title"><span class="icon">${icon}</span>${escHtml(c.chore)}</div>
       ${personRows}
     </div>`;
   }).join("");
