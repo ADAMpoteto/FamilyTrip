@@ -88,20 +88,30 @@ function pickDefaultTrip(list){
   return idx<0?0:idx;
 }
 
-/* 年ごとに <optgroup> でまとめてプルダウンの肥大化を緩和 */
-function buildTripSelectHtml(list){
-  let html="", curLabel=null;
+/* 年 → その年の予定、の2段階セレクトでプルダウンの肥大化を防ぐ */
+let YEAR_GROUPS={}, YEAR_ORDER=[];
+function yearLabelOf(t){ return t.dateObj ? `${t.dateObj.getFullYear()}年` : "日付未定"; }
+function buildYearGroups(list){
+  YEAR_GROUPS={}; YEAR_ORDER=[];
   list.forEach((t,i)=>{
-    const label = t.dateObj ? `${t.dateObj.getFullYear()}年` : "日付未定";
-    if(label!==curLabel){
-      if(curLabel!==null) html+="</optgroup>";
-      html+=`<optgroup label="${escHtml(label)}">`;
-      curLabel=label;
-    }
-    html+=`<option value="${i}">${escHtml((t.dateRaw?t.dateRaw+" ":"")+(t.title||"（無題の旅）"))}</option>`;
+    const label=yearLabelOf(t);
+    if(!YEAR_GROUPS[label]){ YEAR_GROUPS[label]=[]; YEAR_ORDER.push(label); }
+    YEAR_GROUPS[label].push(i);
   });
-  if(curLabel!==null) html+="</optgroup>";
-  return html;
+}
+function populateYearSelect(defaultLabel){
+  const ySel=document.getElementById("trip-year-sel");
+  ySel.innerHTML=YEAR_ORDER.map(label=>`<option value="${escHtml(label)}">${escHtml(label)}</option>`).join("");
+  ySel.value=defaultLabel;
+}
+function populateTripSelect(yearLabel, defaultGlobalIdx){
+  const tSel=document.getElementById("trip-sel");
+  const idxs=YEAR_GROUPS[yearLabel]||[];
+  tSel.innerHTML=idxs.map(i=>{
+    const t=TRIPS[i];
+    return `<option value="${i}">${escHtml((t.dateRaw?t.dateRaw+" ":"")+(t.title||"（無題の旅）"))}</option>`;
+  }).join("");
+  if(defaultGlobalIdx!=null) tSel.value=String(defaultGlobalIdx);
 }
 
 async function loadShiori(){
@@ -113,20 +123,31 @@ async function loadShiori(){
     return;
   }
   TRIPS=buildTrips(rows);
-  const sel=document.getElementById("trip-sel");
+  const ySel=document.getElementById("trip-year-sel");
+  const tSel=document.getElementById("trip-sel");
   if(!TRIPS.length){
-    sel.innerHTML='<option>データがありません</option>';
+    ySel.innerHTML='<option>データがありません</option>';
+    tSel.innerHTML='<option>データがありません</option>';
     document.getElementById("sh-hero").innerHTML="";
     document.getElementById("sh-stats").innerHTML="";
     document.getElementById("sch-tabs").innerHTML="";
     document.getElementById("sch-body").innerHTML='<div class="loading">スケジュールがありません</div>';
     return;
   }
-  sel.innerHTML=buildTripSelectHtml(TRIPS);
-  sel.onchange=()=>renderShiori(Number(sel.value));
+  buildYearGroups(TRIPS);
   const di=pickDefaultTrip(TRIPS);
-  sel.selectedIndex=di;
+  const defaultLabel=yearLabelOf(TRIPS[di]);
+  populateYearSelect(defaultLabel);
+  populateTripSelect(defaultLabel, di);
   renderShiori(di);
+
+  ySel.onchange=()=>{
+    const label=ySel.value;
+    const firstIdx=(YEAR_GROUPS[label]||[])[0];
+    populateTripSelect(label, firstIdx);
+    if(firstIdx!=null) renderShiori(firstIdx);
+  };
+  tSel.onchange=()=>renderShiori(Number(tSel.value));
 }
 
 function renderShiori(idx){
