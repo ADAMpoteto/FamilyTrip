@@ -260,15 +260,18 @@ async function loadCleaning(){
     done:get(3,c), missed:get(4,c), last:get(5,c)
   }));
 
-  box.innerHTML=items.map(it=>`
+  box.innerHTML=items.map(it=>{
+    const doneN=Number(it.done)||0, missedN=Number(it.missed)||0;
+    return `
     <div class="clean-card">
       <div class="clean-card-title">${escHtml(it.name)}</div>
       <div class="clean-card-row"><span>担当</span><strong>${escHtml(it.person||"－")}</strong></div>
       <div class="clean-card-row"><span>頻度</span><strong>${escHtml(it.freq||"－")}</strong></div>
-      <div class="clean-card-row"><span>実施済み</span><strong>${escHtml(it.done||"0")}</strong></div>
-      <div class="clean-card-row"><span>実施忘れ</span><strong>${escHtml(it.missed||"0")}</strong></div>
+      <div class="clean-card-row"><span>実施済み</span><strong class="badge${doneN===0?" zero":""}">${doneN}回</strong></div>
+      <div class="clean-card-row"><span>実施忘れ</span><strong class="badge${missedN===0?" zero":""}">${missedN}回</strong></div>
       <div class="clean-card-row"><span>最終実施</span><strong>${escHtml(it.last||"未実施")}</strong></div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 /* ---------- 家事当番（買い物・料理・ゴミ出し・洗濯・家計簿） ---------- */
