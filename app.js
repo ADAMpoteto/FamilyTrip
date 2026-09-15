@@ -264,9 +264,9 @@ async function loadCleaning(){
       <div class="clean-card-title">${escHtml(it.name)}</div>
       <div class="clean-card-row"><span>担当</span><strong>${escHtml(it.person||"－")}</strong></div>
       <div class="clean-card-row"><span>頻度</span><strong>${escHtml(it.freq||"－")}</strong></div>
-      <div class="clean-card-row"><span>実施回数</span><strong>${escHtml(it.done||"0")}</strong></div>
+      <div class="clean-card-row"><span>実施済み</span><strong>${escHtml(it.done||"0")}</strong></div>
       <div class="clean-card-row"><span>実施忘れ</span><strong>${escHtml(it.missed||"0")}</strong></div>
-      <div class="clean-card-row"><span>最終実施日</span><strong>${escHtml(it.last||"未実施")}</strong></div>
+      <div class="clean-card-row"><span>最終実施</span><strong>${escHtml(it.last||"未実施")}</strong></div>
     </div>`).join("");
 }
 
