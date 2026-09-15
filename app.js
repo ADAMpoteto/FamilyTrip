@@ -6,6 +6,7 @@
 const URL_SHIORI  = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo5stnTOsjo7t3y-IsCX96ryADJWD0Es6eqRRyYlS99QgWqtLGRMGMCywYysxk47Q-q3nUqW0lea9A/pub?gid=0&single=true&output=csv";
 const URL_HISTORY = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo5stnTOsjo7t3y-IsCX96ryADJWD0Es6eqRRyYlS99QgWqtLGRMGMCywYysxk47Q-q3nUqW0lea9A/pub?gid=566552673&single=true&output=csv";
 const URL_CLEANING = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo5stnTOsjo7t3y-IsCX96ryADJWD0Es6eqRRyYlS99QgWqtLGRMGMCywYysxk47Q-q3nUqW0lea9A/pub?gid=649917247&single=true&output=csv";
+const URL_KAJI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo5stnTOsjo7t3y-IsCX96ryADJWD0Es6eqRRyYlS99QgWqtLGRMGMCywYysxk47Q-q3nUqW0lea9A/pub?gid=918542610&single=true&output=csv";
 
 /* ---------- ユーティリティ ---------- */
 const WD=["日","月","火","水","木","金","土"];
@@ -42,7 +43,7 @@ function countdownHtml(dt){
 }
 
 /* ---------- ルーティング（戻る/進む・直リンク対応） ---------- */
-const NAV_OF={ shiori:"shiori", history:"history", cleaning:"cleaning" };
+const NAV_OF={ shiori:"shiori", history:"history", cleaning:"cleaning", kaji:"kaji" };
 function applyPage(page){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   const el=document.getElementById(page); if(!el) return;
@@ -270,10 +271,63 @@ async function loadCleaning(){
     </div>`).join("");
 }
 
+/* ---------- 家事当番（買い物・料理・ゴミ出し・洗濯・家計簿） ---------- */
+async function loadKaji(){
+  const box=document.getElementById("kaji-grid");
+  let rows;
+  try{ const r=await fetchCSV(URL_KAJI); rows=cleanRows(r.data); }
+  catch(e){
+    box.innerHTML='<div class="loading">読み込みに失敗しました。ネットワーク環境をご確認ください。</div>';
+    return;
+  }
+  if(!rows.length){ box.innerHTML='<div class="loading">データがありません</div>'; return; }
+
+  // No・日付以外の列＝家事の種類。列の並び順はCSVの見出し順をそのまま使う
+  const chores=Object.keys(rows[0]).filter(k=>k!=="No" && k!=="日付");
+  // "両方"のように複数人を表す語は、集計時に該当する全員へカウントする
+  const MULTI_WORDS=["両方","全員"];
+  const people=new Set();
+  rows.forEach(r=>chores.forEach(c=>{
+    const v=F(r,c);
+    if(v && !MULTI_WORDS.includes(v)) people.add(v);
+  }));
+
+  const cards=chores.map(chore=>{
+    let count=0, lastDate=null, lastRaw="";
+    const personCount={};
+    rows.forEach(r=>{
+      const v=F(r,chore);
+      if(!v) return;
+      count++;
+      const d=pd(F(r,"日付"));
+      if(d && (!lastDate || d>lastDate)){ lastDate=d; lastRaw=F(r,"日付"); }
+      if(MULTI_WORDS.includes(v)){
+        people.forEach(p=>{ personCount[p]=(personCount[p]||0)+1; });
+      } else {
+        personCount[v]=(personCount[v]||0)+1;
+      }
+    });
+    return { chore, count, lastRaw, personCount };
+  });
+
+  box.innerHTML=cards.map(c=>{
+    const personRows=Object.keys(c.personCount).map(p=>
+      `<div class="clean-card-row"><span>${escHtml(p)}</span><strong>${c.personCount[p]}回</strong></div>`
+    ).join("");
+    return `<div class="clean-card">
+      <div class="clean-card-title">${escHtml(c.chore)}</div>
+      <div class="clean-card-row"><span>実施済み</span><strong>${c.count}回</strong></div>
+      <div class="clean-card-row"><span>最終実施</span><strong>${escHtml(c.lastRaw||"未実施")}</strong></div>
+      ${personRows}
+    </div>`;
+  }).join("");
+}
+
 /* ---------- 初期化 ---------- */
 loadShiori();
 loadHistory();
 loadCleaning();
+loadKaji();
 (function initRouting(){
   const st=parseHash();
   history.replaceState({page:st.page}, "", location.hash||"#shiori");
