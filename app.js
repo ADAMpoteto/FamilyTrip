@@ -295,6 +295,7 @@ async function loadKaji(){
   const cards=chores.map(chore=>{
     let count=0, lastDate=null, lastRaw="";
     const personCount={};
+    people.forEach(p=>{ personCount[p]=0; });
     rows.forEach(r=>{
       const v=F(r,chore);
       if(!v) return;
