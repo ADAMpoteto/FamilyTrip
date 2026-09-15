@@ -1,0 +1,98 @@
+:root{
+  --bg:#fff; --bg2:#f5f5f3; --bg3:#ebebea;
+  --text:#111; --text2:#66666a; --text3:#aaa;
+  --border:rgba(0,0,0,.10); --border2:rgba(0,0,0,.18);
+  --r:6px; --rl:10px;
+  --accent:#111; --accent-light:#f0f0ee;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-tap-highlight-color:transparent;}
+body{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;}
+
+a:focus-visible,button:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid #1a4db0;outline-offset:2px;border-radius:4px;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+}
+
+/* NAV（中央揃え） */
+nav{position:sticky;top:0;z-index:200;background:rgba(255,255,255,.93);backdrop-filter:blur(12px);border-bottom:.5px solid var(--border);padding:0 16px;transition:box-shadow .2s;}
+nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
+.nav-top{display:flex;justify-content:center;padding:8px 0 4px;}
+.nav-brand{font-size:12px;font-weight:800;letter-spacing:.04em;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.nav-links{display:flex;justify-content:center;gap:0;overflow-x:auto;scrollbar-width:none;padding-bottom:6px;}
+.nav-links::-webkit-scrollbar{display:none;}
+.nav-btn{font-size:12px;padding:5px 12px;border-radius:var(--r);border:none;background:none;color:var(--text2);cursor:pointer;white-space:nowrap;transition:background .12s,color .12s;}
+.nav-btn:hover{background:var(--bg2);color:var(--text);}
+.nav-btn.active{background:var(--text);color:#fff;}
+@media(max-width:480px){ .nav-btn{font-size:12px;padding:5px 10px;} nav{padding:0 10px;} }
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;animation:pageIn .28s ease both;}
+@keyframes pageIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.container{max-width:820px;margin:0 auto;padding:26px 16px;}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--text);}
+.page-header h1{font-size:22px;font-weight:800;letter-spacing:-.03em;}
+.page-header p{font-size:12px;color:var(--text2);margin-top:4px;}
+
+/* TRIP SELECT */
+.trip-selbox{margin-bottom:18px;}
+.trip-selbox select{font-size:13px;font-weight:600;padding:8px 32px 8px 12px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;appearance:none;max-width:100%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+
+/* HERO (しおり) */
+.hero{padding:6px 0 24px;border-bottom:2px solid var(--text);margin-bottom:22px;}
+.hero-eyebrow{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
+.hero-title{font-size:26px;font-weight:800;line-height:1.25;letter-spacing:-.03em;}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;}
+.hero-chip{font-size:12px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--bg2);color:var(--text2);border-left:3px solid var(--text);}
+.hero-chip.accent{background:var(--text);color:#fff;border-left-color:var(--text);}
+.hero-chip strong{font-weight:800;font-size:14px;}
+
+/* STATS */
+.stats-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;}
+.stat-chip{font-size:12px;color:var(--text2);padding:6px 12px;background:var(--bg2);border-radius:var(--r);border-left:3px solid var(--text);}
+.stat-chip strong{color:var(--text);font-weight:800;font-size:15px;}
+
+/* SECTION */
+.card-section{margin-bottom:34px;}
+.sec-title{font-size:14px;font-weight:800;margin-bottom:14px;padding-bottom:7px;border-bottom:1.5px solid var(--border);letter-spacing:-.01em;}
+
+/* DAY TABS */
+.day-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.day-tab{font-size:12px;font-weight:700;padding:7px 13px;border-radius:99px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;}
+.day-tab:hover{background:var(--bg2);color:var(--text);}
+.day-tab.active{background:var(--text);color:#fff;border-color:var(--text);}
+.day-tab .tab-sub{font-size:10px;font-weight:700;opacity:.7;font-variant-numeric:tabular-nums;}
+
+/* SCHEDULE TIMELINE */
+.sch-list{margin-top:2px;}
+.sch-item{display:grid;grid-template-columns:56px 1fr;gap:10px;}
+.sch-time{font-size:12px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums;padding-top:1px;text-align:right;}
+.sch-body{position:relative;padding-left:20px;padding-bottom:22px;border-left:2px solid var(--border);margin-left:3px;}
+.sch-item:last-child .sch-body{border-left-color:transparent;padding-bottom:4px;}
+.sch-body::before{content:"";position:absolute;left:-8px;top:1px;width:13px;height:13px;border-radius:50%;background:var(--bg);border:2.5px solid var(--text);}
+.sch-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sch-title{font-size:15px;font-weight:800;word-break:break-word;}
+.sch-place{margin-top:4px;}
+.maplink{font-size:12px;color:#1a4db0;text-decoration:underline;font-weight:600;}
+.sch-note{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+
+/* HISTORY TIMELINE (年表スタイル) */
+.hist-timeline{position:relative;padding-left:20px;margin-top:10px;}
+.hist-timeline::before{content:"";position:absolute;left:4px;top:8px;bottom:8px;width:2px;background:var(--border2);}
+.hist-item{position:relative;margin-bottom:24px;padding-left:16px;}
+.hist-item:last-child{margin-bottom:0;}
+.hist-item::before{content:"";position:absolute;left:-20px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--text);border:2px solid var(--bg);}
+.hist-date{font-size:12px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums;margin-bottom:2px;}
+.hist-content{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+
+.loading{padding:32px 0;text-align:center;color:var(--text3);font-size:13px;}
+
+/* FOOTER */
+.foot{border-top:.5px solid var(--border);padding:24px 16px 40px;text-align:center;color:var(--text3);font-size:11px;line-height:1.9;}
