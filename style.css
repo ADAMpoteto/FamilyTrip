@@ -45,7 +45,7 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 .trip-selbox{margin-bottom:18px;display:flex;gap:8px;flex-wrap:wrap;}
 .trip-selbox select{font-size:13px;font-weight:600;padding:8px 32px 8px 12px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;appearance:none;max-width:100%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
 .trip-selbox #trip-year-sel{flex:0 0 auto;min-width:88px;}
-.trip-selbox #trip-sel{flex:1 1 220px;}
+.trip-selbox #trip-sel{flex:0 1 260px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
 /* HERO (しおり) */
 .hero{padding:6px 0 24px;border-bottom:2px solid var(--text);margin-bottom:22px;}
@@ -95,6 +95,13 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 .hist-content{font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
 
 .loading{padding:32px 0;text-align:center;color:var(--text3);font-size:13px;}
+
+/* CLEANING SUMMARY */
+.clean-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.clean-card{border:1.5px solid var(--border);border-radius:var(--rl);padding:14px;}
+.clean-card-title{font-size:15px;font-weight:800;margin-bottom:10px;padding-bottom:8px;border-bottom:1.5px solid var(--border);}
+.clean-card-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2);padding:3px 0;}
+.clean-card-row strong{color:var(--text);font-weight:700;text-align:right;}
 
 /* FOOTER */
 .foot{border-top:.5px solid var(--border);padding:24px 16px 40px;text-align:center;color:var(--text3);font-size:11px;line-height:1.9;}
