@@ -310,11 +310,7 @@ async function loadKaji(){
     return { chore, personCount, personLast };
   });
 
-  // 家事の種類ごとに軽くアイコンを添えて視認性を上げる（未登録の家事名は既定アイコンにフォールバック）
-  const CHORE_ICONS={ "買い物":"🛒", "料理":"🍳", "ゴミ出し":"🗑️", "洗濯":"🧺", "家計簿":"💰", "自動車":"🚗", "子ども":"🧒" };
-
   box.innerHTML=cards.map(c=>{
-    const icon=CHORE_ICONS[c.chore]||"🏠";
     const personRows=Object.keys(c.personCount).map(p=>{
       const cnt=c.personCount[p];
       const last=c.personLast[p];
@@ -325,7 +321,7 @@ async function loadKaji(){
       </div>`;
     }).join("");
     return `<div class="kaji-card">
-      <div class="kaji-card-title"><span class="icon">${icon}</span>${escHtml(c.chore)}</div>
+      <div class="kaji-card-title">${escHtml(c.chore)}</div>
       ${personRows}
     </div>`;
   }).join("");
