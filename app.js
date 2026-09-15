@@ -294,26 +294,28 @@ async function loadKaji(){
 
   const cards=chores.map(chore=>{
     let count=0, lastDate=null, lastRaw="";
-    const personCount={};
-    people.forEach(p=>{ personCount[p]=0; });
+    const personCount={}, personLast={};
+    people.forEach(p=>{ personCount[p]=0; personLast[p]=""; });
     rows.forEach(r=>{
       const v=F(r,chore);
       if(!v) return;
       count++;
-      const d=pd(F(r,"日付"));
-      if(d && (!lastDate || d>lastDate)){ lastDate=d; lastRaw=F(r,"日付"); }
-      if(MULTI_WORDS.includes(v)){
-        people.forEach(p=>{ personCount[p]=(personCount[p]||0)+1; });
-      } else {
-        personCount[v]=(personCount[v]||0)+1;
-      }
+      const dateRaw=F(r,"日付");
+      const d=pd(dateRaw);
+      if(d && (!lastDate || d>lastDate)){ lastDate=d; lastRaw=dateRaw; }
+      const targets = MULTI_WORDS.includes(v) ? Array.from(people) : [v];
+      targets.forEach(p=>{
+        personCount[p]=(personCount[p]||0)+1;
+        const pd2=pd(personLast[p]);
+        if(d && (!pd2 || d>pd2)) personLast[p]=dateRaw;
+      });
     });
-    return { chore, count, lastRaw, personCount };
+    return { chore, count, lastRaw, personCount, personLast };
   });
 
   box.innerHTML=cards.map(c=>{
     const personRows=Object.keys(c.personCount).map(p=>
-      `<div class="clean-card-row"><span>${escHtml(p)}</span><strong>${c.personCount[p]}回</strong></div>`
+      `<div class="clean-card-row"><span>${escHtml(p)}</span><strong>${c.personCount[p]}回 / ${escHtml(c.personLast[p]||"未実施")}</strong></div>`
     ).join("");
     return `<div class="clean-card">
       <div class="clean-card-title">${escHtml(c.chore)}</div>
