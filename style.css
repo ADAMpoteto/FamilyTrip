@@ -121,3 +121,77 @@ nav.scrolled{box-shadow:0 2px 14px rgba(0,0,0,.06);}
 
 /* FOOTER */
 .foot{border-top:.5px solid var(--border);padding:24px 16px 40px;text-align:center;color:var(--text3);font-size:11px;line-height:1.9;}
+
+/* KEIKENCHI MAP（経県値マップ） */
+.kk-sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--border2);flex:0 0 auto;}
+.kk-legend{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.kk-leg{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:6px 11px;border-radius:99px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;transition:background .12s,border-color .12s;}
+.kk-leg:hover{background:var(--bg2);}
+.kk-leg.active{border-color:var(--text);background:var(--bg2);}
+.kk-leg-n{font-size:11px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums;}
+
+.kk-mapwrap{position:relative;border:1.5px solid var(--border);border-radius:var(--rl);background:#eef1f3;overflow:hidden;}
+.kk-map svg{display:block;width:100%;height:auto;max-height:72vh;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;}
+.kk-map svg.dragging{cursor:grabbing;}
+.kk-map svg.dragging .kk-muni{pointer-events:none;}
+.kk-map .loading{padding:80px 16px;}
+.kk-muni{stroke:rgba(0,0,0,.38);stroke-width:.7;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:opacity .15s;fill:#fff;}
+.kk-muni:hover{stroke:var(--text);stroke-width:1.6;}
+.kk-muni:focus{outline:none;}
+.kk-muni:focus-visible{stroke:#1a4db0;stroke-width:2.6;}
+.kk-muni.sel{stroke:var(--text);stroke-width:2.6;}
+.kk-muni.dim{opacity:.18;}
+.kk-void{fill:#dfe2e4 !important;cursor:default;pointer-events:none;}
+.kk-border{fill:none;stroke:var(--text);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;pointer-events:none;}
+
+
+.kk-tip{position:absolute;z-index:3;pointer-events:none;display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;font-weight:700;padding:5px 9px;border-radius:var(--r);background:#fff;border:1px solid var(--border2);box-shadow:0 2px 10px rgba(0,0,0,.08);}
+.kk-tip em{font-style:normal;font-weight:600;color:var(--text2);}
+.kk-tip[hidden]{display:none;}
+
+.kk-note{margin-top:10px;font-size:12px;line-height:1.7;color:var(--text2);padding:10px 12px;background:var(--bg2);border-radius:var(--r);border-left:3px solid var(--text);}
+
+.kk-info{margin:14px 0 30px;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--rl);min-height:58px;}
+.kk-info-empty{font-size:12px;color:var(--text3);}
+.kk-info-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.kk-info-name{font-size:17px;font-weight:800;letter-spacing:-.01em;}
+.kk-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:3px 10px 3px 8px;border-radius:99px;background:var(--bg2);}
+.kk-badge::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c);border:1px solid var(--border2);}
+.kk-info-date{font-size:12px;font-weight:700;color:var(--text2);margin-top:6px;font-variant-numeric:tabular-nums;}
+.kk-info-memo{font-size:13px;line-height:1.75;margin:6px 0 2px;white-space:pre-wrap;word-break:break-word;}
+.kk-info .maplink{display:inline-block;margin-top:8px;}
+
+.kk-group{margin-bottom:16px;}
+.kk-group-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;margin-bottom:8px;}
+details.kk-group summary{cursor:pointer;list-style:none;}
+details.kk-group summary::-webkit-details-marker{display:none;}
+details.kk-group summary::after{content:"＋";font-size:11px;color:var(--text3);margin-left:2px;}
+details.kk-group[open] summary::after{content:"－";}
+.kk-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.kk-chip{font-size:12px;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;}
+.kk-chip:hover{background:var(--bg2);}
+@media(max-width:480px){ .kk-leg{padding:5px 9px;} }
+
+/* 経県値：全国タイル */
+.kk-region{margin-bottom:12px;}
+.kk-region-name{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;}
+.kk-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:5px;}
+.kk-tile{display:flex;align-items:center;gap:6px;padding:6px 9px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:12px;font-weight:700;text-align:left;}
+.kk-tile:hover{background:var(--bg2);}
+.kk-tile.active{border-color:var(--text);background:var(--bg2);}
+.kk-tile-name{flex:1;white-space:nowrap;}
+.kk-tile-n{font-size:10px;font-weight:700;color:var(--text3);font-variant-numeric:tabular-nums;}
+.kk-sub{font-size:13px;font-weight:800;margin-bottom:10px;}
+#kk-pref-sel{min-width:140px;}
+
+/* 経県値：市区町村名 */
+.kk-labels{pointer-events:none;fill:var(--text);stroke:#fff;paint-order:stroke;stroke-linejoin:round;font-weight:700;}
+.kk-labels text{text-anchor:middle;dominant-baseline:central;}
+.kk-labels text.off{display:none;}
+
+/* 経県値：拡大縮小ボタン */
+.kk-ctrl{position:absolute;top:10px;right:10px;z-index:2;display:flex;flex-direction:column;border:1.5px solid var(--border2);border-radius:var(--r);background:#fff;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.06);}
+.kk-ctrl button{width:34px;height:34px;border:none;background:#fff;color:var(--text);font-size:17px;font-weight:700;line-height:1;cursor:pointer;}
+.kk-ctrl button+button{border-top:1px solid var(--border);}
+.kk-ctrl button:hover{background:var(--bg2);}
+.kk-ctrl button[data-z="home"]{font-size:15px;}
