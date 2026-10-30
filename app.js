@@ -1,6 +1,6 @@
 /* =====================================================================
    データソース（Googleスプレッドシートの公開CSV）
-   ・旅のしおり : 旅行日 / 旅行タイトル / 何日目 / 到着時刻 / 出発時刻 / 訪問先名 / メモ（到着時刻は任意）
+   ・旅の記録 : 旅行日 / 旅行タイトル / 何日目 / 到着時刻 / 出発時刻 / 訪問先名 / メモ（到着時刻は任意）
    ・ヒストリー : 日付 / 内容
    ===================================================================== */
 const URL_SHIORI  = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo5stnTOsjo7t3y-IsCX96ryADJWD0Es6eqRRyYlS99QgWqtLGRMGMCywYysxk47Q-q3nUqW0lea9A/pub?gid=0&single=true&output=csv";
@@ -58,8 +58,9 @@ function countdownHtml(t){
   if(du>0) return `<div class="hero-count"><span class="hero-count-label">出発まで</span><span class="hero-count-num">${du}<small>日</small></span></div>`;
   if(du===0) return `<div class="hero-count live"><span class="hero-count-label">いよいよ</span><span class="hero-count-text">本日出発！</span></div>`;
   if(today) return `<div class="hero-count live"><span class="hero-count-label">旅行中</span><span class="hero-count-num">${today}<small>日目</small></span></div>`;
-  const ago=-du-(tripSpan(t)-1);
-  return `<div class="hero-count past"><span class="hero-count-label">帰ってから</span><span class="hero-count-num">${ago}<small>日</small></span></div>`;
+  const n=-du;   // 出発日から何日たったか
+  const [v,u]= n<31 ? [n,"日前"] : n<365 ? [Math.floor(n/30.4),"か月前"] : [Math.floor(n/365),"年前"];
+  return `<div class="hero-count past"><span class="hero-count-label">いまから</span><span class="hero-count-num">${v}<small>${u}</small></span></div>`;
 }
 function syncNavHeight(){
   const n=document.querySelector("nav");
@@ -87,7 +88,7 @@ function parseHash(){ const h=(location.hash||"").replace(/^#/,""); return {page
 window.addEventListener("popstate", e=>{ const st=e.state||parseHash(); applyPage(st.page||"shiori"); });
 window.addEventListener("scroll", ()=>{ document.querySelector("nav").classList.toggle("scrolled", window.scrollY>4); }, {passive:true});
 
-/* ---------- 旅のしおり ---------- */
+/* ---------- 旅の記録（あとで見返す用。URL・関数名は shiori のまま） ---------- */
 let TRIPS=[], currentTripKey=null, currentDay=0, currentIdx=0;
 
 function buildTrips(rows){
@@ -118,12 +119,13 @@ function buildTrips(rows){
 }
 function pickDefaultTrip(list){
   const t=new Date(); t.setHours(0,0,0,0);
-  let idx=list.findIndex(x=>tripTodayDay(x)>0);              // 旅行中ならそれを最優先
-  if(idx<0) idx=list.findIndex(x=>x.dateObj && x.dateObj>=t); // 直近の未来の旅行
-  if(idx<0) idx=list.length-1;                             // 全て過去なら最後
+  let idx=list.findIndex(x=>tripTodayDay(x)>0);                 // 旅行中ならそれ
+  if(idx<0){                                                     // いちばん最近に行った旅
+    for(let i=list.length-1;i>=0;i--){ if(list[i].dateObj && list[i].dateObj<=t){ idx=i; break; } }
+  }
+  if(idx<0) idx=list.findIndex(x=>x.dateObj && x.dateObj>=t);   // まだ1つも行っていなければ次の予定
   return idx<0?0:idx;
 }
-
 /* 年 → その年の予定、の2段階セレクトでプルダウンの肥大化を防ぐ */
 let YEAR_GROUPS={}, YEAR_ORDER=[];
 function yearLabelOf(t){ return t.dateObj ? `${t.dateObj.getFullYear()}年` : "日付未定"; }
@@ -172,6 +174,13 @@ async function loadShiori(){
     return;
   }
   buildYearGroups(TRIPS);
+  {
+    const t0=new Date(); t0.setHours(0,0,0,0);
+    const done=TRIPS.filter(t=>t.dateObj && t.dateObj<=t0);
+    const nights=done.reduce((s,t)=>s+tripSpan(t)-1,0), places=done.reduce((s,t)=>s+t.stops,0);
+    document.getElementById("trip-total").innerHTML=done.length
+      ? `これまで <strong>${done.length}</strong> 回・<strong>${nights}</strong> 泊・<strong>${places}</strong> か所` : "";
+  }
   const di=pickDefaultTrip(TRIPS);
   const defaultLabel=yearLabelOf(TRIPS[di]);
   populateYearSelect(defaultLabel);
@@ -226,7 +235,7 @@ function renderShiori(idx){
       <div class="hero-title">${escHtml(t.title||"（無題の旅）")}</div>
       <div class="hero-meta">
         <span class="hero-chip">日程 <strong>${span===1?"日帰り":`${span-1}泊${span}日`}</strong></span>
-        <span class="hero-chip">訪問予定 <strong>${t.stops}</strong> 件</span>
+        <span class="hero-chip">行った場所 <strong>${t.stops}</strong> か所</span>
       </div>
     </div>
     ${countdownHtml(t)}`;
@@ -242,20 +251,26 @@ function stayText(arr, dep){
   const n=d-a, h=Math.floor(n/60), m=n%60;
   return (h?`${h}時間`:"")+(m?`${m}分`:"");
 }
-function schItemHtml(s){
-  // 着＝到着時刻、発＝出発時刻。どちらもなければ「－」
-  const tl=(v,k,cls)=>`<span class="t ${cls}"><b>${escHtml(v)}</b><i>${k}</i></span>`;
-  const time=(s.arr||s.dep)
-    ? `<div class="sch-time">${s.arr?tl(s.arr,"着","arr"):""}${s.dep?tl(s.dep,"発","dep"+(s.arr?" sub":"")):""}</div>`
-    : `<div class="sch-time empty">－</div>`;
+function durText(n){ const h=Math.floor(n/60), m=n%60; return (h?`${h}時間`:"")+(m?`${m}分`:"")||"0分"; }
+/* 左＝着いた時刻（大きく）。到着時刻がない最初の場所だけは出発時刻に「発」を付ける。
+   名前の下に「〜出発（滞在）」、次の場所との間に「移動 ◯」 */
+function schItemHtml(s, next){
+  const time = s.arr ? `<div class="sch-time">${escHtml(s.arr)}</div>`
+             : s.dep ? `<div class="sch-time">${escHtml(s.dep)}<i>発</i></div>`
+             : `<div class="sch-time empty">－</div>`;
   const stay=stayText(s.arr, s.dep);
-  const map=s.name?`<a class="sch-map" href="${mapLink(s.name)}" target="_blank" rel="noopener" aria-label="${escHtml(s.name)}を地図で見る">地図 ↗</a>`:"";
+  const until=(s.arr && s.dep) ? `<div class="sch-until">〜${escHtml(s.dep)}${stay?`（${stay}）`:""}</div>` : "";
   const note=s.note?`<div class="sch-note">${escHtml(s.note)}</div>`:"";
+  let move="";
+  if(next){
+    const a=toMin(s.dep||""), b=toMin(next.arr||next.dep||"");
+    if(a!=null && b!=null && b>a) move=`<div class="sch-move">移動 ${durText(b-a)}</div>`;
+  }
   return `<div class="sch-item">
       ${time}
       <div class="sch-body">
-        <div class="sch-head"><span class="sch-title">${escHtml(s.name||"（未設定）")}</span>${map}</div>
-        ${stay?`<div class="sch-stay">滞在 ${stay}</div>`:""}${note}
+        <div class="sch-title">${escHtml(s.name||"（未設定）")}</div>
+        ${until}${note}${move}
       </div>
     </div>`;
 }
@@ -269,8 +284,8 @@ function renderSchedule(t){
     return `<button class="day-tab${i===currentDay?" active":""}" onclick="selectDay(${i})" aria-pressed="${i===currentDay}">${d.day}日目${sub}${today}</button>`;
   }).join("");
   const d=days[currentDay];
-  document.getElementById("sch-sub").textContent=d?`${d.items.length}件`:"";
-  document.getElementById("sch-body").innerHTML=d?`<div class="sch-list">${d.items.map(schItemHtml).join("")}</div>`:'<div class="loading">予定がありません</div>';
+  document.getElementById("sch-sub").textContent=d?`${d.items.length}か所`:"";
+  document.getElementById("sch-body").innerHTML=d?`<div class="sch-list">${d.items.map((s,i)=>schItemHtml(s, d.items[i+1])).join("")}</div>`:'<div class="loading">予定がありません</div>';
 }
 function selectDay(i){
   currentDay=i;
