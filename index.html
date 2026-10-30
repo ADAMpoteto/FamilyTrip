@@ -14,7 +14,7 @@
 
 <nav>
   <div class="nav-top">
-    <div class="nav-brand">西川家記録</div>
+    <a class="nav-brand" href="#shiori" onclick="goto('shiori');return false;"><span class="brand-mark" aria-hidden="true">西川家</span>記録</a>
   </div>
   <div class="nav-links">
     <button class="nav-btn active" data-nav="shiori" onclick="goto('shiori')">旅のしおり</button>
@@ -28,14 +28,15 @@
 <!-- ========== 旅のしおり ========== -->
 <div id="shiori" class="page active">
 <div class="container">
-  <div class="trip-selbox">
-    <select id="trip-year-sel"><option>読み込み中…</option></select>
-    <select id="trip-sel"><option>読み込み中…</option></select>
+  <div class="trip-selbox trip-nav">
+    <button type="button" class="trip-step" id="trip-prev" aria-label="前の旅行" title="前の旅行">‹</button>
+    <select id="trip-year-sel" aria-label="年を選ぶ"><option>読み込み中…</option></select>
+    <select id="trip-sel" aria-label="旅行を選ぶ"><option>読み込み中…</option></select>
+    <button type="button" class="trip-step" id="trip-next" aria-label="次の旅行" title="次の旅行">›</button>
   </div>
   <div class="hero" id="sh-hero"></div>
-  <div class="stats-row" id="sh-stats"></div>
   <div class="card-section">
-    <div class="sec-title" id="sch-anchor">スケジュール</div>
+    <div class="sec-title" id="sch-anchor">スケジュール<span class="sec-sub" id="sch-sub"></span></div>
     <div class="day-tabs" id="sch-tabs"></div>
     <div id="sch-body"><div class="loading">読み込み中…</div></div>
   </div>

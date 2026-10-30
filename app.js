@@ -34,13 +34,28 @@ function fetchCSVRaw(url){
     Papa.parse(url, { download:true, header:false, skipEmptyLines:false, complete:resolve, error:reject });
   });
 }
-function countdownHtml(dt){
-  if(!dt) return "";
-  const du=daysUntil(dt);
-  if(du>0) return `出発まで <strong>${du}</strong> 日`;
-  if(du===0) return "<strong>本日出発！</strong>";
-  return `<strong>${Math.abs(du)}</strong> 日前の予定でした`;
+/* 旅行の日数（何日目の最大値）と、今日が旅行中なら何日目か */
+function tripSpan(t){ return t.dayList.length ? Math.max(...t.dayList.map(d=>d.day)) : 1; }
+function tripTodayDay(t){
+  if(!t.dateObj) return 0;
+  const du=daysUntil(t.dateObj);
+  return (du<=0 && -du<tripSpan(t)) ? (-du+1) : 0;
 }
+function countdownHtml(t){
+  const dt=t.dateObj;
+  if(!dt) return "";
+  const du=daysUntil(dt), today=tripTodayDay(t);
+  if(du>0) return `<div class="hero-count"><span class="hero-count-label">出発まで</span><span class="hero-count-num">${du}<small>日</small></span></div>`;
+  if(du===0) return `<div class="hero-count live"><span class="hero-count-label">いよいよ</span><span class="hero-count-text">本日出発！</span></div>`;
+  if(today) return `<div class="hero-count live"><span class="hero-count-label">旅行中</span><span class="hero-count-num">${today}<small>日目</small></span></div>`;
+  const ago=-du-(tripSpan(t)-1);
+  return `<div class="hero-count past"><span class="hero-count-label">帰ってから</span><span class="hero-count-num">${ago}<small>日</small></span></div>`;
+}
+function syncNavHeight(){
+  const n=document.querySelector("nav");
+  if(n) document.documentElement.style.setProperty("--nav-h", n.offsetHeight+"px");
+}
+window.addEventListener("resize", syncNavHeight);
 
 /* ---------- ルーティング（戻る/進む・直リンク対応） ---------- */
 const NAV_OF={ shiori:"shiori", history:"history", cleaning:"cleaning", kaji:"kaji", keiken:"keiken" };
@@ -62,7 +77,7 @@ window.addEventListener("popstate", e=>{ const st=e.state||parseHash(); applyPag
 window.addEventListener("scroll", ()=>{ document.querySelector("nav").classList.toggle("scrolled", window.scrollY>4); }, {passive:true});
 
 /* ---------- 旅のしおり ---------- */
-let TRIPS=[], currentTripKey=null, currentDay=0;
+let TRIPS=[], currentTripKey=null, currentDay=0, currentIdx=0;
 
 function buildTrips(rows){
   const map={};
@@ -92,7 +107,8 @@ function buildTrips(rows){
 }
 function pickDefaultTrip(list){
   const t=new Date(); t.setHours(0,0,0,0);
-  let idx=list.findIndex(x=>x.dateObj && x.dateObj>=t);   // 直近の未来の旅行
+  let idx=list.findIndex(x=>tripTodayDay(x)>0);              // 旅行中ならそれを最優先
+  if(idx<0) idx=list.findIndex(x=>x.dateObj && x.dateObj>=t); // 直近の未来の旅行
   if(idx<0) idx=list.length-1;                             // 全て過去なら最後
   return idx<0?0:idx;
 }
@@ -139,7 +155,8 @@ async function loadShiori(){
     ySel.innerHTML='<option>データがありません</option>';
     tSel.innerHTML='<option>データがありません</option>';
     document.getElementById("sh-hero").innerHTML="";
-    document.getElementById("sh-stats").innerHTML="";
+    document.getElementById("trip-prev").disabled=true;
+    document.getElementById("trip-next").disabled=true;
     document.getElementById("sch-tabs").innerHTML="";
     document.getElementById("sch-body").innerHTML='<div class="loading">スケジュールがありません</div>';
     return;
@@ -158,45 +175,77 @@ async function loadShiori(){
     if(firstIdx!=null) renderShiori(firstIdx);
   };
   tSel.onchange=()=>renderShiori(Number(tSel.value));
+  document.getElementById("trip-prev").onclick=()=>stepTrip(-1);
+  document.getElementById("trip-next").onclick=()=>stepTrip(1);
+}
+
+/* ‹ › ボタンで前後の旅行へ（年をまたいでも、年のプルダウンを追従させる） */
+function stepTrip(dir){
+  const ni=currentIdx+dir;
+  if(ni<0 || ni>=TRIPS.length) return;
+  const label=yearLabelOf(TRIPS[ni]);
+  const ySel=document.getElementById("trip-year-sel");
+  if(ySel.value!==label){ ySel.value=label; populateTripSelect(label, ni); }
+  else document.getElementById("trip-sel").value=String(ni);
+  renderShiori(ni);
 }
 
 function renderShiori(idx){
   const t=TRIPS[idx]; if(!t) return;
-  if(t.key!==currentTripKey){ currentTripKey=t.key; currentDay=0; }
+  currentIdx=idx;
+  if(t.key!==currentTripKey){
+    currentTripKey=t.key;
+    // 旅行中ならその日のタブを最初に開く
+    const td=tripTodayDay(t);
+    const di=td ? t.dayList.findIndex(d=>d.day===td) : -1;
+    currentDay=di>=0?di:0;
+  }
+  document.getElementById("trip-prev").disabled = idx<=0;
+  document.getElementById("trip-next").disabled = idx>=TRIPS.length-1;
 
-  const cd=countdownHtml(t.dateObj);
+  const span=tripSpan(t);
+  let when=escHtml(t.dateRaw||"日付未定");
+  if(t.dateObj){
+    const y=t.dateObj.getFullYear();
+    when=`${y}年 ${fmtMD(t.dateObj)}`+(span>1?` 〜 ${fmtMD(addDays(t.dateObj, span-1))}`:"");
+  }
   document.getElementById("sh-hero").innerHTML=`
-    <div class="hero-eyebrow">旅のしおり</div>
-    <div class="hero-title">${escHtml(t.title||"（無題の旅）")}</div>
-    <div class="hero-meta">${t.dateRaw?`<span class="hero-chip">${escHtml(t.dateRaw)}</span>`:""}${cd?`<span class="hero-chip accent">${cd}</span>`:""}</div>`;
-
-  document.getElementById("sh-stats").innerHTML=`
-    <div class="stat-chip">日程 <strong>${t.dayList.length} 日間</strong></div>
-    <div class="stat-chip">訪問予定 <strong>${t.stops} 件</strong></div>`;
+    <div class="hero-main">
+      <div class="hero-eyebrow">${when}</div>
+      <div class="hero-title">${escHtml(t.title||"（無題の旅）")}</div>
+      <div class="hero-meta">
+        <span class="hero-chip">日程 <strong>${span===1?"日帰り":`${span-1}泊${span}日`}</strong></span>
+        <span class="hero-chip">訪問予定 <strong>${t.stops}</strong> 件</span>
+      </div>
+    </div>
+    ${countdownHtml(t)}`;
 
   renderSchedule(t);
 }
 
 function schItemHtml(s){
-  const time=escHtml(s.dep||"");
-  const place=s.name?`<div class="sch-place"><a class="maplink" href="${mapLink(s.name)}" target="_blank">地図で見る ↗</a></div>`:"";
+  const time=s.dep?`<div class="sch-time">${escHtml(s.dep)}</div>`:`<div class="sch-time empty">－</div>`;
+  const map=s.name?`<a class="sch-map" href="${mapLink(s.name)}" target="_blank" rel="noopener" aria-label="${escHtml(s.name)}を地図で見る">地図 ↗</a>`:"";
   const note=s.note?`<div class="sch-note">${escHtml(s.note)}</div>`:"";
   return `<div class="sch-item">
-      <div class="sch-time">${time}</div>
+      ${time}
       <div class="sch-body">
-        <div class="sch-head"><span class="sch-title">${escHtml(s.name||"（未設定）")}</span></div>
-        ${place}${note}
+        <div class="sch-head"><span class="sch-title">${escHtml(s.name||"（未設定）")}</span>${map}</div>
+        ${note}
       </div>
     </div>`;
 }
 function renderSchedule(t){
   const days=t.dayList;
   if(currentDay>days.length-1) currentDay=0;
+  const td=tripTodayDay(t);
   document.getElementById("sch-tabs").innerHTML=days.map((d,i)=>{
     const sub=t.dateObj?`<span class="tab-sub">${fmtMD(addDays(t.dateObj, d.day-1))}</span>`:"";
-    return `<button class="day-tab${i===currentDay?" active":""}" onclick="selectDay(${i})">${d.day}日目${sub}</button>`;
+    const today=td===d.day?`<span class="tab-today">今日</span>`:"";
+    return `<button class="day-tab${i===currentDay?" active":""}" onclick="selectDay(${i})" aria-pressed="${i===currentDay}">${d.day}日目${sub}${today}</button>`;
   }).join("");
   const d=days[currentDay];
+  document.getElementById("sch-sub").textContent=d?`${d.items.length}件`:"";
   document.getElementById("sch-body").innerHTML=d?`<div class="sch-list">${d.items.map(schItemHtml).join("")}</div>`:'<div class="loading">予定がありません</div>';
 }
 function selectDay(i){
@@ -204,7 +253,12 @@ function selectDay(i){
   const t=TRIPS.find(x=>x.key===currentTripKey);
   if(t) renderSchedule(t);
   const a=document.getElementById("sch-anchor");
-  if(a){ const nav=document.querySelector("nav"); const y=window.scrollY+a.getBoundingClientRect().top-(nav?nav.offsetHeight:0)-8; window.scrollTo({top:Math.max(0,y), behavior:prefersReduced()?"auto":"smooth"}); }
+  // 日程を下まで読んでいたときだけ、その日の先頭まで戻す（上にいるときは画面を動かさない）
+  if(a){
+    const nav=document.querySelector("nav"), navH=nav?nav.offsetHeight:0;
+    const top=a.getBoundingClientRect().top;
+    if(top<navH) window.scrollTo({top:Math.max(0, window.scrollY+top-navH-8), behavior:prefersReduced()?"auto":"smooth"});
+  }
 }
 
 /* ---------- ヒストリー ---------- */
@@ -229,11 +283,20 @@ async function loadHistory(){
   const body=document.getElementById("hist-list");
   if(!items.length){ body.innerHTML='<div class="loading">まだ記録がありません</div>'; return; }
 
-  body.innerHTML='<div class="hist-timeline">'+items.map(it=>`
-    <div class="hist-item">
-      <div class="hist-date">${escHtml(it.dateRaw||"")}</div>
-      <div class="hist-content">${escHtml(it.content||"")}</div>
-    </div>`).join("")+'</div>';
+  // 年ごとに見出しを付けて区切る
+  const groups=[];
+  items.forEach(it=>{
+    const y=it.dateObj?`${it.dateObj.getFullYear()}年`:"日付不明";
+    if(!groups.length || groups[groups.length-1].y!==y) groups.push({y, list:[]});
+    groups[groups.length-1].list.push(it);
+  });
+  body.innerHTML=groups.map(g=>`
+    <div class="hist-year">${escHtml(g.y)}<span>${g.list.length}件</span></div>
+    <div class="hist-timeline">${g.list.map(it=>`
+      <div class="hist-item">
+        <div class="hist-date">${escHtml(it.dateRaw||"")}</div>
+        <div class="hist-content">${escHtml(it.content||"")}</div>
+      </div>`).join("")}</div>`).join("");
 }
 
 /* ---------- 掃除当番（サマリー部分のみ） ---------- */
@@ -263,13 +326,17 @@ async function loadCleaning(){
   box.innerHTML=items.map(it=>{
     const doneN=Number(it.done)||0, missedN=Number(it.missed)||0;
     return `
-    <div class="clean-card">
-      <div class="clean-card-title">${escHtml(it.name)}</div>
-      <div class="clean-card-row"><span>担当</span><strong>${escHtml(it.person||"－")}</strong></div>
-      <div class="clean-card-row"><span>頻度</span><strong>${escHtml(it.freq||"－")}</strong></div>
-      <div class="clean-card-row"><span>実施済み</span><strong class="badge${doneN===0?" zero":""}">${doneN}回</strong></div>
-      <div class="clean-card-row"><span>実施忘れ</span><strong class="badge${missedN===0?" zero":""}">${missedN}回</strong></div>
-      <div class="clean-card-row"><span>最終実施</span><strong>${escHtml(it.last||"未実施")}</strong></div>
+    <div class="clean-card${missedN>0?" alert":""}">
+      <div class="clean-card-head">
+        <div class="clean-card-title">${escHtml(it.name)}</div>
+        <span class="clean-person${it.person?"":" none"}">${escHtml(it.person||"担当なし")}</span>
+      </div>
+      <div class="clean-stats">
+        <div class="clean-stat"><span class="clean-stat-label">頻度</span><span class="clean-stat-val">${escHtml(it.freq||"－")}</span></div>
+        <div class="clean-stat${it.last?"":" zero"}"><span class="clean-stat-label">最終実施</span><span class="clean-stat-val">${escHtml(it.last||"未実施")}</span></div>
+        <div class="clean-stat${doneN===0?" zero":""}"><span class="clean-stat-label">実施済み</span><span class="clean-stat-val">${doneN}<small>回</small></span></div>
+        <div class="clean-stat${missedN>0?" warn":" zero"}"><span class="clean-stat-label">実施忘れ</span><span class="clean-stat-val">${missedN}<small>回</small></span></div>
+      </div>
     </div>`;
   }).join("");
 }
@@ -314,10 +381,13 @@ async function loadKaji(){
   });
 
   box.innerHTML=cards.map(c=>{
+    const counts=Object.values(c.personCount);
+    const maxCnt=Math.max(0, ...counts);
+    const uniqueTop=maxCnt>0 && counts.filter(n=>n===maxCnt).length===1;
     const personRows=Object.keys(c.personCount).map(p=>{
       const cnt=c.personCount[p];
       const last=c.personLast[p];
-      return `<div class="kaji-person">
+      return `<div class="kaji-person${uniqueTop && cnt===maxCnt?" top":""}">
         <span class="kaji-person-name">${escHtml(p)}</span>
         <span class="kaji-count-badge${cnt===0?" zero":""}">${cnt}回</span>
         <span class="kaji-last${last?"":" none"}">${escHtml(last||"未実施")}</span>
@@ -924,6 +994,7 @@ loadCleaning();
 loadKaji();
 loadKeiken();
 (function initRouting(){
+  syncNavHeight();
   const st=parseHash();
   history.replaceState({page:st.page}, "", location.hash||"#shiori");
   applyPage(st.page);
