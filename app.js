@@ -120,10 +120,10 @@ function buildTrips(rows){
 function pickDefaultTrip(list){
   const t=new Date(); t.setHours(0,0,0,0);
   let idx=list.findIndex(x=>tripTodayDay(x)>0);                 // 旅行中ならそれ
-  if(idx<0){                                                     // いちばん最近に行った旅
-    for(let i=list.length-1;i>=0;i--){ if(list[i].dateObj && list[i].dateObj<=t){ idx=i; break; } }
+  if(idx<0) idx=list.findIndex(x=>x.dateObj && x.dateObj>=t);   // 次の予定
+  if(idx<0){                                                     // 予定がなければいちばん最近に行った旅
+    for(let i=list.length-1;i>=0;i--){ if(list[i].dateObj){ idx=i; break; } }
   }
-  if(idx<0) idx=list.findIndex(x=>x.dateObj && x.dateObj>=t);   // まだ1つも行っていなければ次の予定
   return idx<0?0:idx;
 }
 /* 年 → その年の予定、の2段階セレクトでプルダウンの肥大化を防ぐ */
