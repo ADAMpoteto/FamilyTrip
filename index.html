@@ -28,11 +28,9 @@
 <!-- ========== 旅のしおり ========== -->
 <div id="shiori" class="page active">
 <div class="container">
-  <div class="trip-selbox trip-nav">
-    <button type="button" class="trip-step" id="trip-prev" aria-label="前の旅行" title="前の旅行">‹</button>
+  <div class="trip-selbox trip-nav" id="trip-selbox">
     <select id="trip-year-sel" aria-label="年を選ぶ"><option>読み込み中…</option></select>
     <select id="trip-sel" aria-label="旅行を選ぶ"><option>読み込み中…</option></select>
-    <button type="button" class="trip-step" id="trip-next" aria-label="次の旅行" title="次の旅行">›</button>
   </div>
   <div class="hero" id="sh-hero"></div>
   <div class="card-section">
@@ -47,7 +45,7 @@
 <div id="cleaning" class="page">
 <div class="container">
   <div class="page-header"><h1>掃除当番</h1><p>担当・頻度・実施状況</p></div>
-  <div class="clean-grid" id="clean-grid"><div class="loading">読み込み中…</div></div>
+  <div class="duty-grid" id="clean-grid"><div class="loading">読み込み中…</div></div>
 </div>
 </div>
 
@@ -55,7 +53,7 @@
 <div id="kaji" class="page">
 <div class="container">
   <div class="page-header"><h1>家事当番</h1><p>買い物・料理・ゴミ出しなど、日々の家事</p></div>
-  <div class="kaji-grid" id="kaji-grid"><div class="loading">読み込み中…</div></div>
+  <div class="duty-grid" id="kaji-grid"><div class="loading">読み込み中…</div></div>
 </div>
 </div>
 

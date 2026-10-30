@@ -1,6 +1,6 @@
 /* =====================================================================
    データソース（Googleスプレッドシートの公開CSV）
-   ・旅のしおり : 旅行日 / 旅行タイトル / 何日目 / 出発時刻 / 訪問先名 / メモ
+   ・旅のしおり : 旅行日 / 旅行タイトル / 何日目 / 到着時刻 / 出発時刻 / 訪問先名 / メモ（到着時刻は任意）
    ・ヒストリー : 日付 / 内容
    ===================================================================== */
 const URL_SHIORI  = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRo5stnTOsjo7t3y-IsCX96ryADJWD0Es6eqRRyYlS99QgWqtLGRMGMCywYysxk47Q-q3nUqW0lea9A/pub?gid=0&single=true&output=csv";
@@ -14,6 +14,16 @@ function pd(s){ if(!s) return null; const m=String(s).match(/(\d{4})\D+(\d{1,2})
 function addDays(dt,n){ const d=new Date(dt.getTime()); d.setDate(d.getDate()+n); return d; }
 function fmtMD(dt){ return `${dt.getMonth()+1}/${dt.getDate()}(${WD[dt.getDay()]})`; }
 function daysUntil(dt){ const t=new Date(); t.setHours(0,0,0,0); return Math.round((dt-t)/86400000); }
+/* 日付を短く：今年なら 10/27(火)、それ以外は 2025/10/27 */
+function shortDate(raw){
+  const d=pd(raw); if(!d) return escHtml(raw||"");
+  return d.getFullYear()===new Date().getFullYear() ? fmtMD(d) : `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+}
+function agoText(raw){
+  const d=pd(raw); if(!d) return "";
+  const n=-daysUntil(d);
+  return n<=0?"今日":n===1?"昨日":`${n}日前`;
+}
 function mapLink(q){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q||"")}`; }
 function prefersReduced(){ return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
 function escHtml(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -66,6 +76,7 @@ function applyPage(page){
   const nav=NAV_OF[page]||page;
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active", b.dataset.nav===nav));
   window.scrollTo(0,0);
+  if(page==="shiori") fitTripSelect();
 }
 function goto(page, push){
   if(push===undefined) push=true;
@@ -89,7 +100,7 @@ function buildTrips(rows){
     if(!map[key]) map[key]={ key, dateRaw, title, dateObj:pd(dateRaw), days:{} };
     const dnum=Number(F(o,"何日目"))||1;
     (map[key].days[dnum]=map[key].days[dnum]||[]).push({
-      dep:F(o,"出発時刻"), name:F(o,"訪問先名"), note:F(o,"メモ")
+      arr:F(o,"到着時刻"), dep:F(o,"出発時刻"), name:F(o,"訪問先名"), note:F(o,"メモ")
     });
   });
   const list=Object.values(map);
@@ -134,7 +145,8 @@ function populateTripSelect(yearLabel, defaultGlobalIdx){
   const idxs=YEAR_GROUPS[yearLabel]||[];
   tSel.innerHTML=idxs.map(i=>{
     const t=TRIPS[i];
-    return `<option value="${i}">${escHtml((t.dateRaw?t.dateRaw+" ":"")+(t.title||"（無題の旅）"))}</option>`;
+    const md=t.dateObj?`${t.dateObj.getMonth()+1}/${t.dateObj.getDate()} `:(t.dateRaw?t.dateRaw+" ":"");
+    return `<option value="${i}">${escHtml(md+(t.title||"（無題の旅）"))}</option>`;
   }).join("");
   if(defaultGlobalIdx!=null) tSel.value=String(defaultGlobalIdx);
 }
@@ -155,8 +167,6 @@ async function loadShiori(){
     ySel.innerHTML='<option>データがありません</option>';
     tSel.innerHTML='<option>データがありません</option>';
     document.getElementById("sh-hero").innerHTML="";
-    document.getElementById("trip-prev").disabled=true;
-    document.getElementById("trip-next").disabled=true;
     document.getElementById("sch-tabs").innerHTML="";
     document.getElementById("sch-body").innerHTML='<div class="loading">スケジュールがありません</div>';
     return;
@@ -175,20 +185,22 @@ async function loadShiori(){
     if(firstIdx!=null) renderShiori(firstIdx);
   };
   tSel.onchange=()=>renderShiori(Number(tSel.value));
-  document.getElementById("trip-prev").onclick=()=>stepTrip(-1);
-  document.getElementById("trip-next").onclick=()=>stepTrip(1);
 }
 
-/* ‹ › ボタンで前後の旅行へ（年をまたいでも、年のプルダウンを追従させる） */
-function stepTrip(dir){
-  const ni=currentIdx+dir;
-  if(ni<0 || ni>=TRIPS.length) return;
-  const label=yearLabelOf(TRIPS[ni]);
-  const ySel=document.getElementById("trip-year-sel");
-  if(ySel.value!==label){ ySel.value=label; populateTripSelect(label, ni); }
-  else document.getElementById("trip-sel").value=String(ni);
-  renderShiori(ni);
+/* 選んでいる旅行名がセレクトに収まらなければ、セレクトを1行まるごと使う */
+let _measureCtx=null;
+function fitTripSelect(){
+  const box=document.getElementById("trip-selbox"), ySel=document.getElementById("trip-year-sel"), tSel=document.getElementById("trip-sel");
+  if(!box || !tSel.options.length || !box.offsetWidth) return;
+  const opt=tSel.options[tSel.selectedIndex]; if(!opt) return;
+  _measureCtx=_measureCtx||document.createElement("canvas").getContext("2d");
+  const cs=getComputedStyle(tSel);
+  _measureCtx.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const need=_measureCtx.measureText(opt.text).width+parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)+4;
+  const avail=box.clientWidth-ySel.offsetWidth-parseFloat(getComputedStyle(box).columnGap||6);
+  box.classList.toggle("stack", need>avail);
 }
+window.addEventListener("resize", fitTripSelect);
 
 function renderShiori(idx){
   const t=TRIPS[idx]; if(!t) return;
@@ -200,8 +212,7 @@ function renderShiori(idx){
     const di=td ? t.dayList.findIndex(d=>d.day===td) : -1;
     currentDay=di>=0?di:0;
   }
-  document.getElementById("trip-prev").disabled = idx<=0;
-  document.getElementById("trip-next").disabled = idx>=TRIPS.length-1;
+  fitTripSelect();
 
   const span=tripSpan(t);
   let when=escHtml(t.dateRaw||"日付未定");
@@ -223,15 +234,28 @@ function renderShiori(idx){
   renderSchedule(t);
 }
 
+/* "9:30" "09:30" "9時30分" → 分。読めなければ null */
+function toMin(v){ const m=kkZen2Han(v).match(/(\d{1,2})\D+(\d{2})/); return m?(+m[1])*60+(+m[2]):null; }
+function stayText(arr, dep){
+  const a=toMin(arr||""), d=toMin(dep||"");
+  if(a==null || d==null || d<=a) return "";
+  const n=d-a, h=Math.floor(n/60), m=n%60;
+  return (h?`${h}時間`:"")+(m?`${m}分`:"");
+}
 function schItemHtml(s){
-  const time=s.dep?`<div class="sch-time">${escHtml(s.dep)}</div>`:`<div class="sch-time empty">－</div>`;
+  // 着＝到着時刻、発＝出発時刻。どちらもなければ「－」
+  const tl=(v,k,cls)=>`<span class="t ${cls}"><b>${escHtml(v)}</b><i>${k}</i></span>`;
+  const time=(s.arr||s.dep)
+    ? `<div class="sch-time">${s.arr?tl(s.arr,"着","arr"):""}${s.dep?tl(s.dep,"発","dep"+(s.arr?" sub":"")):""}</div>`
+    : `<div class="sch-time empty">－</div>`;
+  const stay=stayText(s.arr, s.dep);
   const map=s.name?`<a class="sch-map" href="${mapLink(s.name)}" target="_blank" rel="noopener" aria-label="${escHtml(s.name)}を地図で見る">地図 ↗</a>`:"";
   const note=s.note?`<div class="sch-note">${escHtml(s.note)}</div>`:"";
   return `<div class="sch-item">
       ${time}
       <div class="sch-body">
         <div class="sch-head"><span class="sch-title">${escHtml(s.name||"（未設定）")}</span>${map}</div>
-        ${note}
+        ${stay?`<div class="sch-stay">滞在 ${stay}</div>`:""}${note}
       </div>
     </div>`;
 }
@@ -325,17 +349,21 @@ async function loadCleaning(){
 
   box.innerHTML=items.map(it=>{
     const doneN=Number(it.done)||0, missedN=Number(it.missed)||0;
+    const last=it.last
+      ? `最終 <b>${shortDate(it.last)}</b>${agoText(it.last)?`（${agoText(it.last)}）`:""}`
+      : `<span class="none-red">未実施</span>`;
     return `
-    <div class="clean-card${missedN>0?" alert":""}">
-      <div class="clean-card-head">
-        <div class="clean-card-title">${escHtml(it.name)}</div>
-        <span class="clean-person${it.person?"":" none"}">${escHtml(it.person||"担当なし")}</span>
+    <div class="duty">
+      <div class="duty-row">
+        <div class="duty-name"><span>${escHtml(it.name)}</span><span class="duty-who${it.person?"":" none"}">${escHtml(it.person||"担当なし")}</span></div>
+        <span class="duty-freq">${escHtml(it.freq||"")}</span>
       </div>
-      <div class="clean-stats">
-        <div class="clean-stat"><span class="clean-stat-label">頻度</span><span class="clean-stat-val">${escHtml(it.freq||"－")}</span></div>
-        <div class="clean-stat${it.last?"":" zero"}"><span class="clean-stat-label">最終実施</span><span class="clean-stat-val">${escHtml(it.last||"未実施")}</span></div>
-        <div class="clean-stat${doneN===0?" zero":""}"><span class="clean-stat-label">実施済み</span><span class="clean-stat-val">${doneN}<small>回</small></span></div>
-        <div class="clean-stat${missedN>0?" warn":" zero"}"><span class="clean-stat-label">実施忘れ</span><span class="clean-stat-val">${missedN}<small>回</small></span></div>
+      <div class="duty-row duty-sub">
+        <span>${last}</span>
+        <span class="duty-nums">
+          <span class="${doneN===0?"zero":""}">実施<b>${doneN}</b></span>
+          <span class="${missedN>0?"miss":"zero"}">忘れ<b>${missedN}</b></span>
+        </span>
       </div>
     </div>`;
   }).join("");
@@ -380,22 +408,28 @@ async function loadKaji(){
     return { chore, personCount, personLast };
   });
 
+  // 人ごとの色はどのカードでも同じにする（並び順も固定）
+  const PERSON_COLORS=["#111111","#a3a3a8","#5f5f64","#d0d0d3"];
+  const order=Array.from(people);
+  const colorOf=p=>PERSON_COLORS[order.indexOf(p)%PERSON_COLORS.length];
+
   box.innerHTML=cards.map(c=>{
-    const counts=Object.values(c.personCount);
-    const maxCnt=Math.max(0, ...counts);
-    const uniqueTop=maxCnt>0 && counts.filter(n=>n===maxCnt).length===1;
-    const personRows=Object.keys(c.personCount).map(p=>{
-      const cnt=c.personCount[p];
-      const last=c.personLast[p];
-      return `<div class="kaji-person${uniqueTop && cnt===maxCnt?" top":""}">
-        <span class="kaji-person-name">${escHtml(p)}</span>
-        <span class="kaji-count-badge${cnt===0?" zero":""}">${cnt}回</span>
-        <span class="kaji-last${last?"":" none"}">${escHtml(last||"未実施")}</span>
-      </div>`;
+    const names=order.filter(p=>p in c.personCount);
+    const total=names.reduce((s,p)=>s+c.personCount[p],0);
+    const bar=total
+      ? names.filter(p=>c.personCount[p]>0).map(p=>`<span style="flex:${c.personCount[p]};background:${colorOf(p)}"></span>`).join("")
+      : "";
+    const legend=names.map(p=>{
+      const cnt=c.personCount[p], last=c.personLast[p];
+      return `<span><i style="background:${colorOf(p)}"></i>${escHtml(p)} <b>${cnt}</b>${last?`<em>${shortDate(last)}</em>`:`<em class="none-red">未実施</em>`}</span>`;
     }).join("");
-    return `<div class="kaji-card">
-      <div class="kaji-card-title">${escHtml(c.chore)}</div>
-      ${personRows}
+    return `<div class="duty">
+      <div class="duty-row">
+        <div class="duty-name"><span>${escHtml(c.chore)}</span></div>
+        <span class="duty-total">計 ${total} 回</span>
+      </div>
+      <div class="split" role="img" aria-label="${escHtml(names.map(p=>`${p} ${c.personCount[p]}回`).join("、"))}">${bar}</div>
+      <div class="split-legend">${legend}</div>
     </div>`;
   }).join("");
 }
